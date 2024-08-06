@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Image Classification</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        text-align: center;
+        margin-top: 50px;
+      }
+      #predictions {
+        margin-top: 20px;
+      }
+      .prediction {
+        margin: 5px 0;
+      }
+      #status {
+        margin-top: 20px;
+        font-weight: bold;
+      }
+      .spinner {
+        display: none;
+        margin: 20px auto;
+        border: 8px solid #f3f3f3;
+        border-radius: 50%;
+        border-top: 8px solid #3498db;
+        width: 60px;
+        height: 60px;
+        animation: spin 2s linear infinite;
+      }
+      @keyframes spin {
+        0% {
+          transform: rotate(0deg);
+        }
+        100% {
+          transform: rotate(360deg);
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Image Classification</h1>
+    <input type="file" id="imageInput" />
+    <button onclick="classifyImage()">Classify</button>
+    <div id="status"></div>
+    <div class="spinner" id="spinner"></div>
+    <div id="predictions"></div>
+
+    <script>
+      async function classifyImage() {
+        const input = document.getElementById("imageInput");
+        const status = document.getElementById("status");
+        const spinner = document.getElementById("spinner");
+        const predictionsDiv = document.getElementById("predictions");
+
+        if (input.files.length === 0) {
+          alert("Please select an image");
+          return;
+        }
+
+        status.textContent = "Uploading image...";
+        spinner.style.display = "block";
+        predictionsDiv.innerHTML = "";
+
+        const formData = new FormData();
+        formData.append("image", input.files[0]);
+
+        try {
+          const response = await fetch("http://localhost:3000/classify", {
+            method: "POST",
+            body: formData,
+          });
+
+          if (!response.ok) {
+            throw new Error("Network response was not ok");
+          }
+
+          const data = await response.json();
+          console.log("Received data:", data); // Debugging
+
+          status.textContent = "Image classified successfully!";
+          spinner.style.display = "none";
+
+          if (data.predictions && data.predictions.length > 0) {
+            data.predictions.forEach((prediction) => {
+              const div = document.createElement("div");
+              div.className = "prediction";
+              div.textContent = `Class: ${prediction.label}, Probability: ${prediction.probability}%`;
+              predictionsDiv.appendChild(div);
+            });
+          } else {
+            status.textContent = "No predictions available.";
+          }
+        } catch (error) {
+          console.error("Error:", error);
+          status.textContent = "Failed to classify image.";
+          spinner.style.display = "none";
+        }
+      }
+    </script>
+  </body>
+</html>
